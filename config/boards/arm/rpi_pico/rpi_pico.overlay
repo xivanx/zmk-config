@@ -1,0 +1,72 @@
+#include <dt-bindings/zmk/matrix_transform.h>
+
+/ {
+    chosen {
+        /* 告诉 ZMK：键盘扫描用哪个 kscan 节点 */
+        zmk,kscan = &kscan0;
+        /* 告诉 ZMK：矩阵变换用哪个 transform（用来算 keymap 行列） */
+        zmk,matrix-transform = &default_transform;
+    };
+
+    /* 3x2 的矩阵变换：3 行 2 列
+     * 行: GP2, GP3, GP4
+     * 列: GP0, GP1
+     */
+    default_transform: keymap_transform {
+        compatible = "zmk,matrix-transform";
+        columns = <2>;
+        rows = <3>;
+
+        /* 行优先，一共 6 个按键。后面 keymap 就写 6 个位置。 */
+        map = <RC(0,0) RC(0,1)
+               RC(1,0) RC(1,1)
+               RC(2,0) RC(2,1)>;
+    };
+
+    /* 键盘矩阵扫描：GPIO 矩阵 kscan */
+    kscan0: kscan {
+        compatible = "zmk,kscan-gpio-matrix";
+        label = "KSCAN";
+
+        /* 行: GP2, GP3, GP4 */
+        row-gpios = <&gpio0 2 GPIO_ACTIVE_LOW>,
+                    <&gpio0 3 GPIO_ACTIVE_LOW>,
+                    <&gpio0 4 GPIO_ACTIVE_LOW>;
+
+        /* 列: GP0, GP1 */
+        col-gpios = <&gpio0 0 GPIO_ACTIVE_LOW>,
+                    <&gpio0 1 GPIO_ACTIVE_LOW>;
+
+        diode-direction = "row2col";
+    };
+};
+
+/* I2C1 + DRV2605L，GP7=SCL, GP6=SDA */
+&i2c1 {
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_STANDARD>;
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-names = "default";
+
+    drv2605: haptics@5a {
+        compatible = "ti,drv2605";
+        reg = <0x5a>;
+        status = "okay";
+
+        actuator-mode = "ERM";
+        feedback-brake-factor = "3X";
+        loop-gain = "HIGH";
+        vib-rated-mv = <3200>;
+        vib-overdrive-mv = <3200>;
+    };
+};
+
+/* I2C1 引脚映射到 GP7/GP6 */
+&pinctrl {
+    i2c1_default: i2c1_default {
+        group1 {
+            pinmux = <RP1_I2C1_SCL_GPIO7>,
+                     <RP1_I2C1_SDA_GPIO6>;
+        };
+    };
+};
